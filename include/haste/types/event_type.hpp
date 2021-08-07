@@ -3,6 +3,7 @@
 
 #pragma once
 #include <tuple>
+#include <iostream>
 namespace haste {
 
 template<typename Location_, typename Time_ = double>
@@ -18,8 +19,10 @@ struct TEvent {
   Polarity p;
 
   auto operator=(TEvent& event) -> EventTupleRef {
+    // std::cout<<1<<std::endl;
     return std::forward_as_tuple(event.t, event.x, event.y, event.p); }
   auto operator=(const TEvent& event) const -> EventTuple {
+    // std::cout<<2<<std::endl;
     return {event.t, event.x, event.y, event.p};
   }
 };

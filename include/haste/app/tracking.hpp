@@ -144,17 +144,26 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   CHECK_EQ(tracker.event_counter(), 0);// It is not half-initialized
 
   // Gather half event-window from past events.
+  // time is 0.6 num 24次二分
+  // tracker.t is 0.6 also
+  // std::cout<<tracker.t()<<std::endl;
+  // lower_bound是查找啊，找处第一个大于0.6的时刻，到29636(shapes_translation)
   auto it_seed = std::lower_bound(events.begin(), events.end(), tracker.t(),
-                                  [](const Event& event, const Event::Time& time) { return event.t < time; });
+                                  [](const Event& event, const Event::Time& time) {return event.t < time; });
+  // std::cout<<"loc: "<<it_seed-events.begin()<<std::endl;
 
   constexpr auto kEventWindowSizeHalf = Tracker::kEventWindowSize / 2;
+  // 1+2*(0.2*31*31/2)=193
+  // kEventWindowSizeHalf=193/2=96
+  // std::cout<<Tracker::kEventWindowSize<<std::endl;
+  // std::cout<<kEventWindowSizeHalf<<std::endl;
 
   std::vector<Event> events_past_seed;// We could directly use iterators.
   for (auto it = it_seed; it != events.begin()
-       && events_past_seed.size()
-           < kEventWindowSizeHalf;// TODO: Wrong range (missing events.begin()). Use reverse iterator instead.
-       --it) {                    // TODO: verify Range <= for window size
+       && events_past_seed.size()< kEventWindowSizeHalf;// TODO: Wrong range (missing events.begin()). Use reverse iterator instead.
+       --it) {                   // TODO: verify Range <= for window size
     const auto& event = *it;
+    // 如果当前这个事件在追踪窗口内，那么才把他加入到events_past_seed
     if (tracker.isEventInRange(event.x, event.y)) { events_past_seed.push_back(event); }
   }
 
@@ -164,24 +173,34 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   }
 
   // Feed half of the event window.
+  // !!!绝了，居然是在这里，调用了Event的等于号重载
+  // 原本是按事件倒序，现在正过来
   std::reverse(events_past_seed.begin(), events_past_seed.end());
+  // std::cout<<events_past_seed.size()<<std::endl;    //96
+
+  // 理论上来说，events_past_seed有96个，而pushEvent内部的参数是193个，所以应该不会出问题
   for (const auto& event_past_seed : events_past_seed) {
     auto& [et, ex, ey, ep] = event_past_seed;
     auto update_type = tracker.pushEvent(et, ex, ey);
     CHECK_EQ(update_type,
              haste::HypothesisPatchTracker::kInitializingEvent);// TODO: Improve naming instead of out of range
+            // 似乎是验证失败,就终止运行,并写FATAL日志
   }
 
   // Proceed with the rest of the events.
+  // 0.6s以后的
+  // 这里很奇怪，为啥要这么做呢，初始化的数据，0.6秒前后各占一半
   auto it = it_seed;
   for (; it != events.end(); ++it) {
     auto& [et, ex, ey, ep] = *it;
+    // 在这里边进行的初始化
     auto update_type = tracker.pushEvent(et, ex, ey);
 
     if (update_type == haste::HypothesisPatchTracker::kStateEvent) {
       break;// Out of image (with margin)
     }
   }
+  // 终于把这里看完了,现在主要是把template_定下来了,并对当前的状态构造了11个假设
 
   if (it == events.end()) { LOG(ERROR) << "Event stream finished before tracker is initialized."; }
   return it;

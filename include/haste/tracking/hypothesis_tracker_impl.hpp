@@ -2,6 +2,7 @@
 // ETH Zurich, Vision for Robotics Lab.
 
 #pragma once
+// static bool flag_stop = true;
 
 namespace haste {
 
@@ -18,7 +19,10 @@ auto HypothesisPatchTracker::isEventInRange(const Location &ex, const Location &
   // d2 rule
   Location dx = ex - x();
   Location dy = ey - y();
+  // kPatchSizeHalf 15
   constexpr auto d2_thresh = kPatchSizeHalf * kPatchSizeHalf;
+  // 勾股
+  // 也就是说他是判断是不是在这个半径15的圆的范围内
   return (dx * dx + dy * dy) < d2_thresh;
 }
 
@@ -38,14 +42,24 @@ template<int N>
 auto HypothesisPatchTracker::patchLocation(const LocationVector<N> &ex_vec, const LocationVector<N> &ey_vec,
                                            const Hypothesis &state) const
     -> std::pair<LocationVector<N>, LocationVector<N>> {
+      // 这里应该是对应HASTE3.1部分第二段倒数第二行那个公式
+      // 或者是公式3？没有加weight的部分？
+  // dx,dy是以patch中心为原点的坐标值
   const LocationVector<N> dx = ex_vec - state.x();
   const LocationVector<N> dy = ey_vec - state.y();
+  // cos(theta)和sin(theta)
   const auto ctheta = state.ctheta();
   const auto stheta = state.stheta();
 
+  // 这里是转置过后的旋转矩阵
+  // 所以计算过后，变成了2*1的矩阵，其中每一横行还是193*1
+  // kPatchSizeHalf=15
+  // 这里为啥给他相加呢？转置之后就是在patch中，以中心为原点，右、下为正半轴的坐标
+  // 这里可以见附件excel，它变成了以patch左上为原点的坐标
   LocationVector<N> xp_vec = dx * ctheta + dy * stheta + kPatchSizeHalf;// Patch coordinates
   LocationVector<N> yp_vec = -dx * stheta + dy * ctheta + kPatchSizeHalf;
 
+  // 以中心为原点，右、下为正半轴的坐标
   // TODO: verify the return type does not harm Eigen alignment
   return {xp_vec, yp_vec};
 }
@@ -53,21 +67,32 @@ auto HypothesisPatchTracker::patchLocation(const LocationVector<N> &ex_vec, cons
 auto HypothesisPatchTracker::updateTemplateWithMiddleEvent(const Weight &weight) -> void {
   const auto &[et, ex, ey] = event_window_.middleEvent();
   const auto [xp, yp] = patchLocation(ex, ey, state());
+  // MH第五页左上角
   Interpolator::bilinearIncrementVector(template_, xp, yp, weight * kTemplateUpdateFactor);
 }
 
 auto HypothesisPatchTracker::eventWindowToModelUnitary(const EventWindow &event_window, const Hypothesis &hypothesis,
                                                        const Weight &weight) const -> Patch {
+  // Patch 31*31
   Patch model = Patch::Zero();
+  // 分别获取所有的x和y值，也就是将其放在两个向量中
   EventWindowLocationVector ex_vec = event_window.ex_vec();
   EventWindowLocationVector ey_vec = event_window.ey_vec();
+  // 这里得到的是经过旋转矩阵的193*2
+  // 是在patch中以左上角为原点的坐标值,从0开始
   const auto [xp_vec, yp_vec] = patchLocation(ex_vec, ey_vec, hypothesis);
-
+  // if(flag_stop){
+  //   flag_stop=false;
+  //   std::cout<<xp_vec<<std::endl;
+  //   std::cout<<"---------------"<<std::endl;
+  //   std::cout<<yp_vec<<std::endl;}
+  // kEventWindowSize is 193
   for (size_t i = 0; i < kEventWindowSize; ++i) {// TODO(ialzugaray): "vectorizable" loop with Eigen binaryExpr
     const Location &xp = xp_vec[i];
     const Location &yp = yp_vec[i];
     Interpolator::bilinearIncrementVector(model, xp, yp, weight);
   }
+  // 根据每个被激发的事件点，在其附近4个点上插值
   return model;
 }
 
@@ -83,16 +108,26 @@ auto HypothesisPatchTracker::eventWindowToModelVector(const EventWindow &event_w
     const Location &xp = xp_vec[i];
     const Location &yp = yp_vec[i];
     const Weight &weight = weights[i];
+    // 他和其他的，只有这个权重的设置不同，其他的用的都是固定的1/193，只有这个是高斯权重
     Interpolator::bilinearIncrementVector(model, xp, yp, weight);
   }
+  // 初始化到这里，应该是模板采集结束啊
   return model;
 }
 
 auto HypothesisPatchTracker::initializeTracker() -> void {
   status_ = TrackerStatus::kRunning;
+  // middle is No.96
   const auto &[et, ex, ey] = event_window_.middleEvent();
+  // std::cout<<event_window_.ex_vec()<<std::endl;
+  // std::cout<<"---------------"<<std::endl;
+  // std::cout<<event_window_.ey_vec()<<std::endl;
+  // x,y,theta就是在运行时输入的初始值
+  // 这个假设，应该和状态state是一个意思，都是用一个xyt theta定义的点
   Hypothesis initial_hypothesis{et, x(), y(), theta()};
+  // 下边返回的是model，是根据所有被激发的事件，通过插值创造的模板
   template_ = eventWindowToModel(event_window_, initial_hypothesis);
+  // 将当前的状态转换为11个扰动状态，并进行评分，存到hypotheses_score_中
   transitionToHypothesis(initial_hypothesis);
 }
 
@@ -103,23 +138,30 @@ auto HypothesisPatchTracker::appendEventToWindow(const EventTuple &newest_event)
 }
 
 auto HypothesisPatchTracker::updateHypothesesTimeFromMiddleEvent() {
+  // middleEvent is No.96
   auto [et_mid, ex_mid, ey_mid] = event_window_.middleEvent();
   for (auto &hypothesis : hypotheses_) { hypothesis.t() = et_mid; }
 }
 auto HypothesisPatchTracker::pushEvent(const Time &et, const Location &ex, const Location &ey) -> EventUpdate {
   if (//(et <= t()) ||
+  // 这里还要再检查一遍，初始化的时候检查过一次，这里应该是给后边留的
+  // 检查是不是在state的template范围内
       (!isEventInRange(ex, ey))) {
     return kOutOfRange;
   }
 
   EventTuple newest_event{et, ex, ey};
+  // 这里就是文中说的，用新事件代替旧事件,我就暂时认为他会先积攒满了,才会进行旧事件去除
   const auto oldest_event = appendEventToWindow(newest_event);
-
+  
+  // 第一次初始化运行时，这里是true，初始化过后，就再也不会走这里了
   if (status_ == kUninitialized) {
     if (event_counter_ >= kEventWindowSize) {// TODO: verify >= range
+    // 直到event_window里满足了条件，才会走这条路
       initializeTracker();
       return kStateEvent;
     } else {
+      // 正常情况下,初始化模板时应该走这里
       return kInitializingEvent;
     }
   }
@@ -161,7 +203,9 @@ auto HypothesisPatchTracker::getBestHypothesisIdx() const -> size_t {
 }
 
 auto HypothesisPatchTracker::transitionToHypothesis(const Hypothesis &hypothesis) -> void {
+  // 下边这个应该是11邻域的那个
   hypotheses_ = HypothesesGenerator::GenerateCenteredHypotheses(hypothesis);// Renew hypotheses
+  // 这里边会获取所有的假设的分数,存在hypotheses_score_中
   initializeHypotheses();
 }
 

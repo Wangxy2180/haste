@@ -31,8 +31,12 @@ auto CorrelationTracker::updateHypothesesScore(const EventTuple &oldest_event, c
 };
 
 auto CorrelationTracker::getHypothesisScore_(const Hypothesis &hypothesis) const -> Scalar {
+  // 这个计算方法应该就是Haste的公式3 4了
+  // 这里得到的是坐标转换后的193*2的值 // 以中心为原点，右、下为正半轴的坐标 得到的就是p’
   const auto &[xp_vec, yp_vec] = patchLocation(event_window_.ex_vec(), event_window_.ey_vec(), hypothesis);
+  // 下边的，反正就是采样
   auto sampled_value_vec = Interpolator::bilinearSampleVector(template_, xp_vec, yp_vec);
+  // 这里就是公式4的第一个求和符号的意义
   return (weights_ * sampled_value_vec).sum();
 }
 
@@ -41,6 +45,9 @@ auto CorrelationTracker::setGaussianWeight_() -> void {
   constexpr auto sigma = (kEventWindowSize / 6.0);
   constexpr auto sigma2 = sigma * sigma;
   constexpr auto sigma2_inv = 1.0 / sigma2;
+  // 这才是正八经的高斯权重啊
+  // 中间那一大长串就是i
+  // 咋好像不太一样呢
   weights_ =
       Eigen::exp(-0.5 * sigma2_inv
                  * Eigen::square(Eigen::Array<Weight, -1, 1>::LinSpaced(kEventWindowSize, 0, kEventWindowSize - 1)

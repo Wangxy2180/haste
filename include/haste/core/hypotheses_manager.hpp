@@ -17,6 +17,7 @@ struct IncrementalHypothesesGenerator_TXYR_4neigh_2rot {
   using Hypothesis = HypothesisTXYR<Scalar>;
   using IncrementalHypothesis = typename Hypothesis::Incremental;
 
+  // 这里对应的应该是公式2下边那片,代码中只有7个,论文中是11个,
   static constexpr Scalar deltaX = 1.0f;
   static constexpr Scalar deltaY = 1.0f;
   static constexpr Scalar deltaTheta = 4.0 * M_PI / 180.0;
@@ -39,6 +40,7 @@ struct IncrementalHypothesesGenerator_TXYR_8neigh_2rot {
   static constexpr Scalar deltaY = 1.0f;
   static constexpr Scalar deltaTheta = 4.0 * M_PI / 180.0;
 
+  // 这个才是八邻域
   static constexpr std::array<IncrementalHypothesis,11> kIncrementalHypotheses{
       IncrementalHypothesis{+0.0, +0.0, +0.0},       IncrementalHypothesis{+deltaX, +0.0, +0.0},
       IncrementalHypothesis{-deltaX, +0.0, +0.0},    IncrementalHypothesis{+0.0, +deltaY, +0.0},
@@ -62,6 +64,7 @@ struct CenteredHypothesesGenerator {
 
   static constexpr Hypotheses GenerateCenteredHypotheses(const Hypothesis &null_hypothesis) {
     Hypotheses hypotheses;
+    // 看上去是讲一个假设变成了11个假设
     for (size_t i = 0; i < kNumHypotheses; ++i) {// TODO null hypothesis could be avoided
       hypotheses[i] = null_hypothesis + kIncrementalHypotheses[i];
     }

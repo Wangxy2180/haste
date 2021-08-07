@@ -134,16 +134,21 @@ int main(int argc, char** argv) {
       LOG(INFO) << "Tracker #" << seed.id << " could not be initialized. Skipping to the next seed.";
       continue;
     }
+    // 初始化完成！！！
 
     if (is_recording)  { appendTrackerState(seed.id, *tracker, states_recorded); }// Record first state
     benchmark::Stopwatch timer;
+    std::cout<<events.size()<<std::endl;
 
     // Process events starting just after initialization.
+    // it是刚刚完成初始化时所到达的位置
     for (auto it_end = events.end(); it != it_end; ++it) {
       const auto& event = *it;
+      // 这是什么高级用法,C++17才有的
       const auto& [et, ex, ey, ep] = event;
 
       timer.tic();
+      // 看上去这一步像是最核心的追踪步骤
       const auto& update_type = tracker->pushEvent(et, ex, ey);
       auto t_elapsed = timer.toc();
 

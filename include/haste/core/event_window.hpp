@@ -11,7 +11,9 @@ template<typename Event_, size_t Size_>
 class FixedSizeLocationEventWindowType {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  // Size_ is 193， kSize is 193
   static constexpr size_t kSize = Size_;
+  // kSize is 193
   static_assert(kSize % 2 == 1, "EventWindow kSize parameter must be an odd");
 
   using Event = Event_;
@@ -23,7 +25,8 @@ class FixedSizeLocationEventWindowType {
   using EventWindowVector = Eigen::Array<T, kSize, 1>;
   using TimeVector = EventWindowVector<Time>;
   using LocationVector = EventWindowVector<Location>;
-
+  
+  // 下边这三个值是永远不变的
   static constexpr size_t kOldestEventIdx = 0;
   static constexpr size_t kNewestEventIdx = kSize - 1;
   static constexpr size_t kMiddleEventIdx = (kSize - 1) / 2;

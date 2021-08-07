@@ -24,6 +24,7 @@ auto RpgDataset::loadEvents(const std::string& file_path, std::vector<Event>& ev
   }
   // Preallocation.
   num_events = std::min(countLinesInFile(file), num_events);
+  // 这个方式可太厉害了！
   events.clear();
   events.reserve(num_events);
 

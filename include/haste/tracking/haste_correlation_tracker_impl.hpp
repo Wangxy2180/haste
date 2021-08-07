@@ -27,6 +27,7 @@ auto HasteCorrelationTracker::appendEventToWindow(const EventTuple &newest_event
 }
 
 auto HasteCorrelationTracker::initializeHypotheses() -> void {
+  // kNumHypotheses is 11
   for (size_t i = 0; i < kNumHypotheses; ++i) {
     const auto &hypothesis = hypotheses_[i];
     const auto &[xp_vec, yp_vec] = patchLocation(event_window_.ex_vec(), event_window_.ey_vec(), hypothesis);

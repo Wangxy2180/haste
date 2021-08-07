@@ -1,5 +1,6 @@
 // Copyright (c) 2021 by Ignacio Alzugaray <alzugaray dot ign at gmail dot com>
 // ETH Zurich, Vision for Robotics Lab.
+#include <iostream>
 
 namespace haste {
 
@@ -27,6 +28,7 @@ auto FixedSizeLocationEventWindowType<E, S>::newestEvent() const -> EventTuple {
 
 template<typename E, size_t S>
 auto FixedSizeLocationEventWindowType<E, S>::middleEvent() const -> EventTuple {
+  // std::cout<<"mid: "<<kMiddleEventIdx<<std::endl;
   return getEvent(kMiddleEventIdx);
 }
 
@@ -47,8 +49,9 @@ auto FixedSizeLocationEventWindowType<E, S>::setEvent(const EventTuple &event, c
 template<typename E, size_t S>
 auto FixedSizeLocationEventWindowType<E, S>::appendEvent(const Time &et, const Location &ex, const Location &ey)
     -> EventTuple {
+      
   auto oldest_event = oldestEvent();// Event to be removed from the window and returned
-
+  // 应该就是在这里把最旧的事件给挤没了，这个功能真绝了
   // Roll the data array. TODO: To be substituted by a circular index
   et_vec_.template topRows<kSize - 1>() = et_vec_.template bottomRows<kSize - 1>();
   ex_vec_.template topRows<kSize - 1>() = ex_vec_.template bottomRows<kSize - 1>();
