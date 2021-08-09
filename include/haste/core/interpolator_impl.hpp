@@ -13,6 +13,7 @@ auto InterpolatorType<Value, Location>::bilinearIncrementVector(ValueArray<kRows
   if (x >= 0 && y >= 0 && x < (kRows - 1) && y < (kCols - 1)) {
     DCHECK_GE(x, 0) << "int downcasting not expected for negative values";
     DCHECK_GE(y, 0) << "int downcasting not expected for negative values";
+  ///////////////////////////////////////////////////////////////////////
 
     // 强转是直接甩掉位数，所以值一定是这个浮点数的左上角
     const int ix = (int) x;
@@ -22,11 +23,12 @@ auto InterpolatorType<Value, Location>::bilinearIncrementVector(ValueArray<kRows
     const Location dxdy = dx * dy;
 
     // mat is model
-    // 您这是算啥呢，就是在根据距离的不同，计算当前点在周围四个整数点的取值
+    // 就是在根据距离的不同，计算当前点在周围四个整数点的取值
     // std::cout<<"rowww"<<kRows<<","<<kCols<<std::endl;
     // w is 0.00518135=1/193
     // 似乎时间信息不是很明显，只是当成01去处理
     // 这里很像公式3，但是其高斯窗口又不对
+    // 这里的意思是，193中的每一个，都假设他有一个w？
     mat(ix + 1, iy + 1) += dxdy * w;
     mat(ix, iy + 1) += (dy - dxdy) * w;
     mat(ix + 1, iy) += (dx - dxdy) * w;

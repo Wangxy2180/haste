@@ -51,12 +51,13 @@ auto FixedSizeLocationEventWindowType<E, S>::appendEvent(const Time &et, const L
     -> EventTuple {
       
   auto oldest_event = oldestEvent();// Event to be removed from the window and returned
-  // 应该就是在这里把最旧的事件给挤没了，这个功能真绝了
+  // 应该就是在这里把最旧的事件给挤没了，这个函数真绝了
   // Roll the data array. TODO: To be substituted by a circular index
   et_vec_.template topRows<kSize - 1>() = et_vec_.template bottomRows<kSize - 1>();
   ex_vec_.template topRows<kSize - 1>() = ex_vec_.template bottomRows<kSize - 1>();
   ey_vec_.template topRows<kSize - 1>() = ey_vec_.template bottomRows<kSize - 1>();
-
+  
+  // 没错，他是从尾部插入的
   setEvent(et, ex, ey, kNewestEventIdx);// Edit the newest event
 
   return oldest_event;

@@ -122,6 +122,8 @@ auto initializeTrackerCentered(std::vector<Event>& events, Tracker& tracker) -> 
   // Roll events
   auto it = std::lower_bound(events.begin(), events.end(), tracker.t(),
                              [](const Event& event, const Event::Time& time) { return event.t < time; });
+  // 和下边的是不一样的，这里是++，下边是--
+  // 这里是从0.6开始一直到满了为止
   for (; it != events.end(); ++it) {
     const auto& event = *it;
     auto& [et, ex, ey, ep] = event;
@@ -144,7 +146,6 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   CHECK_EQ(tracker.event_counter(), 0);// It is not half-initialized
 
   // Gather half event-window from past events.
-  // time is 0.6 num 24次二分
   // tracker.t is 0.6 also
   // std::cout<<tracker.t()<<std::endl;
   // lower_bound是查找啊，找处第一个大于0.6的时刻，到29636(shapes_translation)
@@ -155,8 +156,6 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   constexpr auto kEventWindowSizeHalf = Tracker::kEventWindowSize / 2;
   // 1+2*(0.2*31*31/2)=193
   // kEventWindowSizeHalf=193/2=96
-  // std::cout<<Tracker::kEventWindowSize<<std::endl;
-  // std::cout<<kEventWindowSizeHalf<<std::endl;
 
   std::vector<Event> events_past_seed;// We could directly use iterators.
   for (auto it = it_seed; it != events.begin()
@@ -173,12 +172,11 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   }
 
   // Feed half of the event window.
-  // !!!绝了，居然是在这里，调用了Event的等于号重载
-  // 原本是按事件倒序，现在正过来
+  // 原本因为是it--，是按时间倒序，现在正过来
   std::reverse(events_past_seed.begin(), events_past_seed.end());
   // std::cout<<events_past_seed.size()<<std::endl;    //96
 
-  // 理论上来说，events_past_seed有96个，而pushEvent内部的参数是193个，所以应该不会出问题
+  // 理论上来说，events_past_seed有96个，而pushEvent内部的参数是193个，所以CHECK_EQ应该不会报错
   for (const auto& event_past_seed : events_past_seed) {
     auto& [et, ex, ey, ep] = event_past_seed;
     auto update_type = tracker.pushEvent(et, ex, ey);
@@ -190,6 +188,7 @@ auto initializeTrackerRegular(std::vector<Event>& events, Tracker& tracker) -> s
   // Proceed with the rest of the events.
   // 0.6s以后的
   // 这里很奇怪，为啥要这么做呢，初始化的数据，0.6秒前后各占一半
+  // 这里的看上去就和另一个初始化函数差不多了
   auto it = it_seed;
   for (; it != events.end(); ++it) {
     auto& [et, ex, ey, ep] = *it;

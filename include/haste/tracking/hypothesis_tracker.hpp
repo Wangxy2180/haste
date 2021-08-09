@@ -34,12 +34,15 @@ class HypothesisPatchTracker {
   using Location = typename Hypothesis::Location;
   using Orientation = typename Hypothesis::Orientation;
   using Weight = Scalar;
-
+  
+//   这个0.2对应MH里的3.2.1上边那段的beta
   static constexpr Scalar kTextureFactor = 0.2;
   static constexpr Scalar kTemplateUpdateFactor = 0.1;
+//   论文中 patch size是25
   static constexpr size_t kPatchSize = 31;
   static_assert(kPatchSize % 2 == 1, "Patch kSize parameter must be an odd");
   static constexpr size_t kPatchSizeHalf = (kPatchSize - 1) / 2;
+//   对应beta*n^2
   static constexpr size_t kEventWindowSize = 1 + 2 * size_t(kTextureFactor * kPatchSize * kPatchSize / 2);
 
   using Hypotheses = typename HypothesesGenerator::Hypotheses;

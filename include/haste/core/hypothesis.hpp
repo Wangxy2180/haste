@@ -5,6 +5,7 @@
 
 #include <cmath>
 
+// 单纯的定义了一个假设类，没有啥特殊的功能，主要就是存储参数
 namespace haste {
 template <typename S, typename T = double> struct HypothesisTXYR {
   using Time = T;

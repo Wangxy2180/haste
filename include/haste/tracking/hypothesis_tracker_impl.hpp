@@ -38,6 +38,7 @@ auto HypothesisPatchTracker::patchLocation(const Location &ex, const Location &e
   return {xp, yp};
 }
 
+// 这个函数的最后一个输入，就是一个假设，也就是说state就是当前的null假设
 template<int N>
 auto HypothesisPatchTracker::patchLocation(const LocationVector<N> &ex_vec, const LocationVector<N> &ey_vec,
                                            const Hypothesis &state) const
@@ -68,6 +69,7 @@ auto HypothesisPatchTracker::updateTemplateWithMiddleEvent(const Weight &weight)
   const auto &[et, ex, ey] = event_window_.middleEvent();
   const auto [xp, yp] = patchLocation(ex, ey, state());
   // MH第五页左上角
+  // 这里就是重新计算中心点所占的权重
   Interpolator::bilinearIncrementVector(template_, xp, yp, weight * kTemplateUpdateFactor);
 }
 
@@ -119,11 +121,9 @@ auto HypothesisPatchTracker::initializeTracker() -> void {
   status_ = TrackerStatus::kRunning;
   // middle is No.96
   const auto &[et, ex, ey] = event_window_.middleEvent();
-  // std::cout<<event_window_.ex_vec()<<std::endl;
-  // std::cout<<"---------------"<<std::endl;
-  // std::cout<<event_window_.ey_vec()<<std::endl;
   // x,y,theta就是在运行时输入的初始值
   // 这个假设，应该和状态state是一个意思，都是用一个xyt theta定义的点
+  // 这个假设，就是一个存储xytr的类
   Hypothesis initial_hypothesis{et, x(), y(), theta()};
   // 下边返回的是model，是根据所有被激发的事件，通过插值创造的模板
   template_ = eventWindowToModel(event_window_, initial_hypothesis);
@@ -140,6 +140,7 @@ auto HypothesisPatchTracker::appendEventToWindow(const EventTuple &newest_event)
 auto HypothesisPatchTracker::updateHypothesesTimeFromMiddleEvent() {
   // middleEvent is No.96
   auto [et_mid, ex_mid, ey_mid] = event_window_.middleEvent();
+  // 对于所有的11个假设，用事件窗口中心的时间更新假设的时间
   for (auto &hypothesis : hypotheses_) { hypothesis.t() = et_mid; }
 }
 auto HypothesisPatchTracker::pushEvent(const Time &et, const Location &ex, const Location &ey) -> EventUpdate {
@@ -165,20 +166,27 @@ auto HypothesisPatchTracker::pushEvent(const Time &et, const Location &ex, const
       return kInitializingEvent;
     }
   }
-
+  
+  // 使用新的事件窗口中心的时间去更新每个假设的时间
   updateHypothesesTimeFromMiddleEvent();// TODO: Not relevant until change of state;
-
+  
+  // 根据假设的最新时间，更新每个假设的分数
   updateHypothesesScore(oldest_event, newest_event);
 
+  // 寻找分数最高的
   auto best_hypothesis_idx = getBestHypothesisIdx();
   EventUpdate ret;
+  // 如果没变。那就返回常规事件，如果变了，那就返回状态事件，
+  // 也就是说这个事件，到底会不会导致他的状态发生改变
   if (best_hypothesis_idx == kNullHypothesisIdx) {
     ret = EventUpdate::kRegularEvent;
   } else {
     ret = EventUpdate::kStateEvent;
+    // 根据更新的状态，产生11个假设
     transitionToHypothesis(hypotheses_[best_hypothesis_idx]);
   }
 
+  // template也要update吗，template是根据
   updateTemplate();
   return ret;
 }
@@ -186,14 +194,19 @@ auto HypothesisPatchTracker::pushEvent(const Time &et, const Location &ex, const
 auto HypothesisPatchTracker::getBestHypothesisIdx() const -> size_t {
   const auto &null_hypothesis_score = hypotheses_score_[kNullHypothesisIdx];
   size_t best_hypothesis_idx;
+  // 分别是寻找矩阵中的最大值和最小值
   auto best_hypothesis_score = hypotheses_score_.maxCoeff(&best_hypothesis_idx);
   // TODO: Compute normalized versions only if null < best
   auto worst_hypothesis_score = hypotheses_score_.minCoeff();
+  // 最大假设分数归一化，不就是1吗
   const auto best_hypothesis_score_normalized =
       (best_hypothesis_score - worst_hypothesis_score) / (best_hypothesis_score - worst_hypothesis_score);
   const auto null_hypothesis_score_normalized =
       (null_hypothesis_score - worst_hypothesis_score) / (best_hypothesis_score - worst_hypothesis_score);
-
+      
+  // 将假设的最大分数和未经假设的最大分数进行比对，
+  // 如果未经假设的分数大于等于假设的分数，那么最新的分数就是未经假设的那个
+  // 否则，如果有假设大于他了，，并且正则化后大于幅度超过0.05(HASTE 3.1最后一段 5%)，那么就要更新这个假设了
   if ((null_hypothesis_score < best_hypothesis_score)
       && ((best_hypothesis_score_normalized - null_hypothesis_score_normalized) > kHysteresisFactor)) {
     return best_hypothesis_idx;
@@ -203,7 +216,7 @@ auto HypothesisPatchTracker::getBestHypothesisIdx() const -> size_t {
 }
 
 auto HypothesisPatchTracker::transitionToHypothesis(const Hypothesis &hypothesis) -> void {
-  // 下边这个应该是11邻域的那个
+  // 下边这个是11邻域的那个
   hypotheses_ = HypothesesGenerator::GenerateCenteredHypotheses(hypothesis);// Renew hypotheses
   // 这里边会获取所有的假设的分数,存在hypotheses_score_中
   initializeHypotheses();

@@ -121,6 +121,9 @@ int main(int argc, char** argv) {
     auto tracker = createTracker(FLAGS_tracker_type, seed);
 
     auto it = events.begin();
+    // 下边这两个
+    // 1.从0.6s开始，一直填充直到满足条件
+    // 2.0.6前后分别填充一半
     if (!FLAGS_centered_initialization) {
       it = initializeTrackerCentered(events, *tracker);
     } else {
@@ -148,15 +151,22 @@ int main(int argc, char** argv) {
       const auto& [et, ex, ey, ep] = event;
 
       timer.tic();
-      // 看上去这一步像是最核心的追踪步骤
+      // 因为已经初始化完成，所以pushEvent会直接进入追踪过程
       const auto& update_type = tracker->pushEvent(et, ex, ey);
       auto t_elapsed = timer.toc();
 
+      // ----------------核心部分到此结束-----------------------
+      // 分类讨论是哪种事件，并进行累计
+      // 事实上，在测试数据中，只有0.77%的state event
+      // 也就是说，绝大多数时候都是空假设的分数最高
       if (update_type == Tracker::EventUpdate::kRegularEvent) { benchmark.registerRegular(t_elapsed); }
 
       if (update_type == Tracker::EventUpdate::kStateEvent) {
         benchmark.registerState(t_elapsed);
+        // 如果该事件导致状态发生了改变，那么还要
+        // 记录
         if (is_recording) { appendTrackerState(seed.id, *tracker, states_recorded); }
+        // 判断有没有超出边界，如果超出了，那就停止
         if (stoppingCondition(*tracker)) { break; }
       }
 
@@ -168,8 +178,8 @@ int main(int argc, char** argv) {
         haste::ImshowEigenArrayNormalized("Feature Template", tracker->tracker_template().transpose());
         cv::waitKey(1);
       }
-    }
-  }
+    } //end event for
+  } //end seed for
 
   if (is_recording) { writeTrackerStates(states_recorded, FLAGS_output_file); }
 
