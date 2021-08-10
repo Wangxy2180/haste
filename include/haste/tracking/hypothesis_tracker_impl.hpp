@@ -17,6 +17,7 @@ auto HypothesisPatchTracker::isEventInRange(const Location &ex, const Location &
   //      auto xp = +dx * ctheta_ + dy * stheta_ + kPatchSizeHalf;
   //      auto yp = -dx * stheta_ + dy * ctheta_ + kPatchSizeHalf;
   // d2 rule
+  // x() y()是state的x(),y(),也就是空假设的
   Location dx = ex - x();
   Location dy = ey - y();
   // kPatchSizeHalf 15
@@ -69,7 +70,7 @@ auto HypothesisPatchTracker::updateTemplateWithMiddleEvent(const Weight &weight)
   const auto &[et, ex, ey] = event_window_.middleEvent();
   const auto [xp, yp] = patchLocation(ex, ey, state());
   // MH第五页左上角
-  // 这里就是重新计算中心点所占的权重
+  // 这里就是重新计算中心点所占的权重，这个意思是不是说，所有经过中间点的元素，也就是旧的元素，他的权重会变低
   Interpolator::bilinearIncrementVector(template_, xp, yp, weight * kTemplateUpdateFactor);
 }
 
@@ -83,11 +84,6 @@ auto HypothesisPatchTracker::eventWindowToModelUnitary(const EventWindow &event_
   // 这里得到的是经过旋转矩阵的193*2
   // 是在patch中以左上角为原点的坐标值,从0开始
   const auto [xp_vec, yp_vec] = patchLocation(ex_vec, ey_vec, hypothesis);
-  // if(flag_stop){
-  //   flag_stop=false;
-  //   std::cout<<xp_vec<<std::endl;
-  //   std::cout<<"---------------"<<std::endl;
-  //   std::cout<<yp_vec<<std::endl;}
   // kEventWindowSize is 193
   for (size_t i = 0; i < kEventWindowSize; ++i) {// TODO(ialzugaray): "vectorizable" loop with Eigen binaryExpr
     const Location &xp = xp_vec[i];
@@ -110,10 +106,11 @@ auto HypothesisPatchTracker::eventWindowToModelVector(const EventWindow &event_w
     const Location &xp = xp_vec[i];
     const Location &yp = yp_vec[i];
     const Weight &weight = weights[i];
-    // 他和其他的，只有这个权重的设置不同，其他的用的都是固定的1/193，只有这个是高斯权重
+    // 他和其他的，只有这个权重的设置不同，其他的用的都是固定的1/193，只有这个是高斯权重 1->4
     Interpolator::bilinearIncrementVector(model, xp, yp, weight);
   }
-  // 初始化到这里，应该是模板采集结束啊
+  // 初始化到这里，是template采集结束
+  // 虽然他叫model,但似乎除了可视化部分,他只用作template初始化了
   return model;
 }
 
@@ -126,9 +123,11 @@ auto HypothesisPatchTracker::initializeTracker() -> void {
   // 这个假设，就是一个存储xytr的类
   Hypothesis initial_hypothesis{et, x(), y(), theta()};
   // 下边返回的是model，是根据所有被激发的事件，通过插值创造的模板
+  // 而且这个函数只有在可视化和创造模板时用到
   template_ = eventWindowToModel(event_window_, initial_hypothesis);
   // 将当前的状态转换为11个扰动状态，并进行评分，存到hypotheses_score_中
   transitionToHypothesis(initial_hypothesis);
+  // 这里和追踪的步骤很像，追踪也是先获取中间的时间，然后更新假设并更新分数
 }
 
 auto HypothesisPatchTracker::appendEventToWindow(const EventTuple &newest_event) -> EventTuple {
@@ -170,7 +169,7 @@ auto HypothesisPatchTracker::pushEvent(const Time &et, const Location &ex, const
   // 使用新的事件窗口中心的时间去更新每个假设的时间
   updateHypothesesTimeFromMiddleEvent();// TODO: Not relevant until change of state;
   
-  // 根据假设的最新时间，更新每个假设的分数
+  // 更新每个假设的分数 这步真的有必要吗
   updateHypothesesScore(oldest_event, newest_event);
 
   // 寻找分数最高的

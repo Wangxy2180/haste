@@ -9,7 +9,8 @@ class Hypothesis {
  public:
   using Scalar = Scalar_;
   static constexpr auto kSize = kSize_;
-
+  
+  // 禁止使用默认构造函数
   Hypothesis() = delete;
 
   template<typename... Args>

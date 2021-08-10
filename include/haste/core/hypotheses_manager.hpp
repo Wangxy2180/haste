@@ -61,11 +61,12 @@ struct CenteredHypothesesGenerator {
   static constexpr auto kIncrementalHypotheses = IncrementalHypothesesGenerator::kIncrementalHypotheses;
 
   static constexpr auto kNumHypotheses = kIncrementalHypotheses.size();
+  // 这个就是一个八邻域的TXYR数组
   using Hypotheses = std::array<Hypothesis, kNumHypotheses>;
 
   static constexpr Hypotheses GenerateCenteredHypotheses(const Hypothesis &null_hypothesis) {
     Hypotheses hypotheses;
-    // 看上去是讲一个假设变成了11个假设
+    // 一个假设变成了11个假设
     for (size_t i = 0; i < kNumHypotheses; ++i) {// TODO null hypothesis could be avoided
     // 这个+被重载了，这一层套一层的，真费劲
       hypotheses[i] = null_hypothesis + kIncrementalHypotheses[i];

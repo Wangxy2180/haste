@@ -25,7 +25,7 @@ class InterpolatorType {
 
   template<int kRows, int kCols>
   static inline auto bilinearSample(const ValueArray<kRows, kCols> &mat, const Location &x, const Location &y) -> Value;
-
+  // Samples一般是193，Rows Cols一般是31
   template<int kRows, int kCols, int kSamples>
   static inline auto bilinearSampleVector(const ValueArray<kRows, kCols> &mat, const LocationArray<kSamples, 1> &x_vec,
                                           const LocationArray<kSamples, 1> &y_vec) -> ValueArray<kSamples, 1>;

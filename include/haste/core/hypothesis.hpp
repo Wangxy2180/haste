@@ -8,6 +8,7 @@
 // 单纯的定义了一个假设类，没有啥特殊的功能，主要就是存储参数
 namespace haste {
 template <typename S, typename T = double> struct HypothesisTXYR {
+  // s is float
   using Time = T;
   using Location = S;
   using Orientation = S;
@@ -18,6 +19,7 @@ template <typename S, typename T = double> struct HypothesisTXYR {
       : t_{t}, x_{x}, y_{y}, theta_{theta}, ctheta_{std::cos(theta)},
         stheta_{std::sin(theta)} {};
 
+  // 目前来看，这个增量就是为了创造其余的10个假设准备的
   struct Incremental {
     //    constexpr Incremental(){};
     constexpr Incremental(const Location &dx, const Location &dy,
@@ -39,7 +41,7 @@ template <typename S, typename T = double> struct HypothesisTXYR {
   protected:
     Location dx_, dy_;
     Orientation dtheta_;
-  };
+  };//end Incremental
 
   const Time &t() const { return t_; };
   const Location &x() const { return x_; };
@@ -56,6 +58,8 @@ template <typename S, typename T = double> struct HypothesisTXYR {
   //  Orientation theta() const { return theta_; };
   //  Orientation ctheta() const { return ctheta_; };
   //  Orientation stheta() const { return stheta_; };
+  // 这里重载的+increment，时间不变，增量改变
+  // 假设的加法确实就应该只加这三个
   constexpr HypothesisTXYR<S, T> operator+(const Incremental &increment) const {
     return {t(), x() + increment.dx(), y() + increment.dy(),
             theta() + increment.dtheta()};

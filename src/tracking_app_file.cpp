@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
       auto t_elapsed = timer.toc();
 
       // ----------------核心部分到此结束-----------------------
-      // 分类讨论是哪种事件，并进行累计
+      // 下面是在进行一些统计的工作,分类讨论是哪种事件，并进行累计
       // 事实上，在测试数据中，只有0.77%的state event
       // 也就是说，绝大多数时候都是空假设的分数最高
       if (update_type == Tracker::EventUpdate::kRegularEvent) { benchmark.registerRegular(t_elapsed); }

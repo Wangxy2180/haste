@@ -46,6 +46,7 @@ auto createTracker(const std::string& tracker_type, const TrackerState& seed) ->
   }
 }
 
+// 下边这两个是在输出时用的,平时基本用不上
 /// Read the current state of a tracker and take a provided id to generate a tracker State.
 auto composeTrackerState(const TrackerState::ID& tracker_id, const Tracker& tracker) -> TrackerState {
   return {.t = tracker.t(), .x = tracker.x(), .y = tracker.y(), .theta = tracker.theta(), .id = tracker_id};
@@ -56,6 +57,7 @@ auto appendTrackerState(const TrackerState::ID& tracker_id, const Tracker& track
   states.push_back(composeTrackerState(tracker_id, tracker));
 }
 
+// 这个str参数就是seed
 /// Convert string ("t,x,y,theta,id") to a tracker state.
 auto getTrackerStateFromString(const std::string& str) -> TrackerState {
   constexpr auto delimiter = ',';
@@ -123,7 +125,7 @@ auto initializeTrackerCentered(std::vector<Event>& events, Tracker& tracker) -> 
   auto it = std::lower_bound(events.begin(), events.end(), tracker.t(),
                              [](const Event& event, const Event::Time& time) { return event.t < time; });
   // 和下边的是不一样的，这里是++，下边是--
-  // 这里是从0.6开始一直到满了为止
+  // 这里是从0.6开始，一直到满了为止
   for (; it != events.end(); ++it) {
     const auto& event = *it;
     auto& [et, ex, ey, ep] = event;
