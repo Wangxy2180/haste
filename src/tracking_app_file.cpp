@@ -149,6 +149,9 @@ int main(int argc, char** argv) {
       const auto& event = *it;
       // 这是什么高级用法,C++17才有的
       const auto& [et, ex, ey, ep] = event;
+      
+      // 在这里，左边就已经是浮点数了，为啥呢
+      // std::cout<<ex<<","<<ey<<","<<std::endl;
 
       timer.tic();
       // 因为已经初始化完成，所以pushEvent会直接进入追踪过程

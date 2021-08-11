@@ -14,6 +14,7 @@ auto HasteDifferenceTracker::updateTemplate() -> void {
   updateTemplateWithMiddleEvent(kWeight_);
 };
 
+// 这里居然重载了ToModel
 auto HasteDifferenceTracker::eventWindowToModel(const EventWindow &event_window,
                                                       const Hypothesis &hypothesis) const -> Patch {
   return eventWindowToModelUnitary(event_window, hypothesis, kWeight_);
@@ -29,6 +30,7 @@ auto HasteDifferenceTracker::initializeHypotheses() -> void {
 
 auto HasteDifferenceTracker::updateHypothesesScore(const EventTuple &oldest_event, const EventTuple &newest_event)
     -> void {
+      // 你这俩新旧事件，啥也没干啊
   const auto &[t_old, x_old, y_old] = oldest_event;
   const auto &[t_new, x_new, y_new] = newest_event;
 
@@ -41,6 +43,7 @@ auto HasteDifferenceTracker::updateHypothesesScore(const EventTuple &oldest_even
 }
 
 auto HasteDifferenceTracker::getDifferencePatch_(const Hypothesis &hypothesis) -> Patch {
+  // 使用当前传进来的假设和这193个事件窗口内的事件进行计算
   const auto hypothesis_model = eventWindowToModel(event_window_, hypothesis);
   // 为啥要kEventWindowSize*kWeight呢，这不就得1了吗
   // 减号前边 就是(7)归一化后的模板

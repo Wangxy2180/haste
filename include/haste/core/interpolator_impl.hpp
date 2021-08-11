@@ -53,6 +53,8 @@ auto InterpolatorType<Value, Location>::bilinearSample(const ValueArray<kRows, k
   const Location dy = y - iy;
   const Location dxdy = dx * dy;
 
+
+  // 4->1
   if (x >= 0 && y >= 0 && x < (kRows - 1)
       && y < (kCols - 1)) {// TODO (ialzugaray): this range prevents using elements just
     // in kPatchSize because we are using +1 later on
@@ -91,6 +93,9 @@ auto InterpolatorType<Value, Location>::bilinearSampleVector(const ValueArray<kR
   // 先转int，再转回float？反正就是向下取整了
   const LocationVector xfloor_vec = x_vec.template cast<int>().template cast<Location>();
   const LocationVector yfloor_vec = y_vec.template cast<int>().template cast<Location>();
+  // std::cout<<x_vec<<std::endl<<std::endl;
+  // std::cout<<y_vec<<std::endl;
+  // std::cout<<"--------------------------"<<std::endl;
 
   const LocationVector xfract_vec = x_vec - xfloor_vec;
   const LocationVector yfract_vec = y_vec - yfloor_vec;
@@ -104,7 +109,7 @@ auto InterpolatorType<Value, Location>::bilinearSampleVector(const ValueArray<kR
     //TODO: verify that kRows is actually the offset of each col;
     // 这块好像也是在做插值,这个看上去是用4个整数点插出一个浮点数坐标
     // 返回值是193*1，这个select就很神奇啊
-    // 他在template上取值，计算出了这193个坐标上对应点的分数值
+    // 他在template上取值，计算出了这193个坐标上对应点的分数值 4->1
     return (x_vec >= 0 && y_vec >= 0 && x_vec < (kRows - 1) && y_vec < (kCols - 1)) // TODO (ialzugaray): this range prevents using elements just in kPatchSize because we are using +1 later on
         .select(  v(xfloor_vec + kRows * yfloor_vec) * ((1 - xfract_vec) * (1 - yfract_vec)) +
                       v(xfloor_vec + kRows * (yfloor_vec  + 1)) * ((1 - xfract_vec) * yfract_vec) +    // TODO: double check these two factors

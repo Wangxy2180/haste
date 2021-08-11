@@ -20,6 +20,7 @@ auto CorrelationTracker::updateTemplate() -> void {
 // 虽然这个函数叫model，但本质上，他不就是在做template和可视化
 auto CorrelationTracker::eventWindowToModel(const EventWindow &event_window, const Hypothesis &hypothesis) const
     -> Patch {
+      // 这里的权重是高斯权重
   return eventWindowToModelVector(event_window, hypothesis, weights_);
 };
 
@@ -39,8 +40,8 @@ auto CorrelationTracker::getHypothesisScore_(const Hypothesis &hypothesis) const
   // 同样event_window_里存的也是浮点数
   // std::cout<<event_window_.ex_vec()[99]<<","<<event_window_.ey_vec()[99]<<std::endl;
   const auto &[xp_vec, yp_vec] = patchLocation(event_window_.ex_vec(), event_window_.ey_vec(), hypothesis);
-  std::cout<<xp_vec[96]<<","<<yp_vec[96]<<std::endl;
-  // 下边的，反正就是采样，他是根据模板的值和，对xp_vec，yp_vec进行双线性插值得到的
+  // std::cout<<xp_vec[96]<<","<<yp_vec[96]<<std::endl;
+  // 下边的，反正就是采样，他是根据模板的值和，对xp_vec，yp_vec进行双线性插值得到的 4->1
   auto sampled_value_vec = Interpolator::bilinearSampleVector(template_, xp_vec, yp_vec);
   // sampled_value_vec的size是193，里边存的值，是用那三个参数插值得到的，意义是event_window_中每个点的对应分数
   // 这里就是公式4的第一个求和符号的意义

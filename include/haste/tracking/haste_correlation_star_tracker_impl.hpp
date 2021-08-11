@@ -17,6 +17,7 @@ auto HasteCorrelationStarTracker::eventWindowToModel(const EventWindow &event_wi
 };
 
 auto HasteCorrelationStarTracker::initializeHypotheses() -> void {
+  // 计算分数
   template_normalized_ =
       template_ / template_.sum();// TODO: this step could be avoided by accounting a running sum for template.sum();
 

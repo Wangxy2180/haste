@@ -28,6 +28,7 @@ class HypothesisPatchTracker {
 
   static constexpr auto kNullHypothesisIdx = HypothesesGenerator::kNullHypothesisIdx;
   static constexpr auto kNumHypotheses = HypothesesGenerator::kNumHypotheses;
+  // 这个假设指的是单个假设，也就是TXYR
   using Hypothesis = typename HypothesesGenerator::Hypothesis;
 
   using Time = typename Hypothesis::Time;
@@ -43,8 +44,10 @@ class HypothesisPatchTracker {
   static_assert(kPatchSize % 2 == 1, "Patch kSize parameter must be an odd");
   static constexpr size_t kPatchSizeHalf = (kPatchSize - 1) / 2;
 //   对应beta*n^2
+// 193
   static constexpr size_t kEventWindowSize = 1 + 2 * size_t(kTextureFactor * kPatchSize * kPatchSize / 2);
 
+  // 这里是复数了，他是Hypothesis的std::array
   using Hypotheses = typename HypothesesGenerator::Hypotheses;
   using HypothesesScore = Eigen::Array<Scalar, kNumHypotheses, 1>;
   static constexpr auto kHysteresisFactor = 0.05;
